@@ -80,6 +80,14 @@ html, body {
     cursor: pointer;
 }
 
+.filter-add-section ul li:not(.disabled) {
+    font-weight: bold;
+}
+
+.pointer-none {
+    pointer-events: none;
+}
+
 .filter-add-section ul li.disabled {
     color: grey;
 }

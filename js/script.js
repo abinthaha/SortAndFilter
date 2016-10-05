@@ -1,5 +1,5 @@
 var filterArray = [],
-    allfilterArray = [];
+    toggleArray = [];
 $(document).ready(function() {
 
     //To show the inner menu of each search items
@@ -22,36 +22,17 @@ $(document).ready(function() {
         $('.sort-criteria h2').removeClass('expanded');
     });
 
-    $('.filter-add-section').on('click', '.each-filter', function() {
-        var filterName = $(this).html();
-        $(this).toggleClass('disabled');
-        var itemCheck = checkIfItemExist(filterName);
-        toggleItemInFilter(filterName);
-        removeFromFilterArray(filterName);
-
-        allfilterArray.forEach(function(item) {
-            if (item.name == filterName) {
-                var index = allfilterArray.indexOf(item);
-                allfilterArray[index].key = !allfilterArray[index].key;
-            }
-        })
-    })
-
     //To add inner menu item to Filter area
-    $('.sort-criteria .sort-inner-menu li').click(function(event) {
+    $('.sort-inner-menu').on('click', 'li', function() {
         event.stopPropagation();
         var filterText = $(this).html();
-        if (filterArray.indexOf(filterText) == -1) {
-            $('.filter-container').prepend('<li class="each-filter"><span class="filter-name">' + filterText + '</span><span class="close-button">x</span></li>')
-            filterArray.push(filterText);
-        }
-        else {
-            // filterArray.splice(indexItem, 1);
-        }
-        toggleItemInFilter(filterText);
+        addToSortArea(filterText);
+        addToToggleArea(filterText);
+        recalculateFilters();
+        $(this).toggleClass('pointer-none');
     });
 
-    //To remove filter item from Filter Area
+    //Close button click on each filter
     $('.filter-container').on('click', '.close-button', function(event) {
         event.stopPropagation();
         var siblingFilter = $(this).closest('.each-filter'),
@@ -63,6 +44,9 @@ $(document).ready(function() {
         //To remove from Array
         removeFilter(filterName);
         recalculateFilters();
+
+        //Toggle value in Toggle phase
+        toggleInArray(filterName);
     });
 
     //To clear all the filter criterias from Filter Area
@@ -71,77 +55,83 @@ $(document).ready(function() {
         $('.filter-container li').remove();
         filterArray = [];
     });
-})
 
-function toggleItemInFilter(filterName) {
-    addFilterAll(filterName);
-    //removeFromFilterArray(filterName);
-    recalculateFilters();
-}
+    //To toggle item in filter area
+    $('.filter-add-section').on('click', 'li', function() {
+        var toggleText = $(this).html();
+        $(this).toggleClass('disabled');
+        toggleArrayAndDom(toggleText);
+    })
+});
 
-function checkIfItemExist(filterName) {
-    allfilterArray.forEach(function(item) {
-        if (item.name == filterName) {
-            return true;
+function toggleArrayAndDom(filterText) {
+    toggleArray.forEach(function(item) {
+        if (item.name == filterText) {
+            if (item.key == false) {
+                item.key = true;
+                addToSortArea(filterText);
+            }
+            else {
+                removeFromDom(filterText)
+                removeFilter(filterText);
+                toggleInArray(filterText)
+            }
+            recalculateFilters();
         }
-        else {
-            return false;
+    })
+}
+function removeFromDom(filterText) {
+    var filterArr = $('.filter-container .each-filter');
+    $(filterArr).each(function(index) {
+        var el = $(filterArr)[index];
+        if ($(el).find('.filter-name').html() == filterText) {
+            $(el).remove();
         }
     })
 }
 
-function removeFromFilterArray(filterName) {
-    var indexItem = filterArray.indexOf(filterName);
-    if (indexItem != -1) {
-        filterArray.splice(indexItem, 1);
-        // $('.filter-container li:nth-child('+(indexItem+1)+')').remove();
-    }
+function toggleInArray(filterText) {
+    toggleArray.forEach(function(item) {
+        if (item.name == filterText) {
+            item.key = false;
+            toggleInDom(filterText);
+        }
+    })
 }
 
-function addFilterAll(filterText) {
-    if (allfilterArray.length != 0) {
-        var flag = 0,
-            pos = null;
-        allfilterArray.forEach(function(item) {
-            var index = allfilterArray.indexOf(item);
+function toggleInDom(filterText) {
+    var toggler = $('.filter-add-section ul li');
+    $(toggler).each(function(index) {
+        var el = $(toggler)[index];
+        if ($(el).html() == filterText) {
+            $(el).removeClass('disabled');
+        }
+    })
+}
+
+function addToSortArea(filterText) {
+    if (filterArray.indexOf(filterText) == -1) {
+        filterArray.push(filterText);
+    }
+    $('.filter-container').prepend('<li class="each-filter"><span class="filter-name">' + filterText + '</span><span class="close-button">x</span></li>');
+}
+
+function addToToggleArea(filterText) {
+    var flag = 0;
+    if (toggleArray.length > 0) {
+        toggleArray.forEach(function(item) {
             if (item.name == filterText) {
                 flag = 1;
-                pos = index;
             }
         });
-        if (flag == 0) {
-            $('.filter-add-section ul').append('<li class="each-filter disabled">' + filterText + '</li>');
-            pushToAllFilterArray(filterText);
-        }
-        else {
-            if (allfilterArray[pos].key == false) {
-                allfilterArray[pos].key = true;
-            }
-            else {
-                allfilterArray[pos].key = false;
-            }
-        }
-        // if (flag == 0) {
-        //     $('.filter-add-section ul').append('<li class="each-filter disabled">' + filterText + '</li>');
-        //     pushToAllFilterArray(filterText);
-        // }
-    } else {
-        $('.filter-add-section ul').append('<li class="each-filter disabled">' + filterText + '</li>');
-        pushToAllFilterArray(filterText)
     }
-}
-
-function pushToAllFilterArray(filterText) {
-    allfilterArray.push({
-        'name': filterText,
-        'key': true
-    });
-}
-
-function removeFilter(removeItem) {
-    filterArray = jQuery.grep(filterArray, function(value) {
-        return value != removeItem;
-    });
+    if (flag == 0) {
+        toggleArray.push({
+            "name": filterText,
+            "key": true
+        })
+    }
+    $('.filter-add-section ul').append('<li class="each-filter disabled">' + filterText + '</li>');
 }
 
 function recalculateFilters() {
@@ -153,4 +143,10 @@ function recalculateFilters() {
     } else {
         $('.filter-container .clear-all-filter').remove();
     }
+}
+
+function removeFilter(removeItem) {
+    filterArray = jQuery.grep(filterArray, function(value) {
+        return value != removeItem;
+    });
 }
